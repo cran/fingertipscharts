@@ -28,7 +28,7 @@
 #' region <- "South East region"
 #' top_names <- c("England", region)
 #' ordered_levels <- c("Better",
-#'                     "Same",
+#'                     "Similar",
 #'                     "Worse",
 #'                     "Not compared")
 #' df <- fingertips_data(90316) %>%
@@ -707,11 +707,12 @@ box_plots <- function(data, timeperiod, value,
 #' @family quick charts
 #' @import ggplot2
 #' @import dplyr
-#' @importFrom rlang quo_text
+#' @importFrom rlang quo_text quo sym
 #' @importFrom geojsonio geojson_read
 #' @importFrom leaflet colorFactor leaflet addTiles addPolygons addLegend
 #' @importFrom stats setNames
-#' @importFrom broom tidy
+#' @importFrom fingertipsR fingertips_data
+#' @importFrom sf st_as_sf
 #' @examples
 #' \donttest{
 #' # This example is untested because of the time required to retrieve the data
@@ -745,40 +746,36 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
                 title = "", subtitle = "", copyright_size = 4) {
         area_code <- enquo(area_code)
         fill <- enquo(fill)
-        shp <- geojson_read(ons_api, what = "sp")
-
-        join_field <- vapply(shp@data, function(x) sum(x %in% unique(data$AreaCode)),
+        shp <- geojson_read(ons_api, what = "sp") %>%
+                st_as_sf()
+        all_area_codes <- data %>%
+                pull(!!area_code) %>%
+                unique()
+        join_field <- vapply(shp, function(x) sum(x %in% all_area_codes),
                              numeric(1))
         join_field <- names(join_field[join_field == max(join_field)])
         if (length(join_field) != 1) stop("There is no clear field in the shape file that contains the area codes in the field you have identified")
-        shp <- shp[grepl("^E", shp[[join_field]]), ]
+        shp <- shp %>%
+                filter(grepl("^E", !! quo(!! sym(join_field))))
         if (type == "static") {
-                shp_flat <- tidy(shp, region = join_field)
                 data <- data %>%
                         mutate(!!quo_name(area_code) :=
                                        as.character(!!area_code))
-                shp@data[, join_field] <- as.character(shp@data[, join_field])
-                shp_flat <- left_join(shp_flat, data,
-                                       by = c("id" = "AreaCode"))
+                shp <- shp %>%
+                        mutate(AreaCode = as.character(!! quo(!! sym(join_field)))) %>%
+                        merge(data,
+                              by.x = "AreaCode",
+                              by.y = quo_text(area_code),
+                              all.x = TRUE)
                 copyright <- data.frame(val = paste0("Contains Ordnance Survey data\n",
                                                      "\uA9 Crown copyright and database right 2017.\n",
                                                      "Contains National Statistics data\n",
                                                      "\uA9 Crown copyright and database right 2017."),
-                                        x = max(shp_flat$long),
-                                        y = min(shp_flat$lat))
-                contain_hole <- shp_flat %>%
-                        group_by(id) %>%
-                        summarise(hole_present = n_distinct(hole))
-                shp_flat <- left_join(shp_flat, contain_hole, by = c("id" = "id"))
-                map <- ggplot(shp_flat) +
-                        geom_map(aes_string(map_id = "id", fill = quo_text(fill)),
-                                 map = shp_flat[shp_flat$hole_present == 2,],
-                                 colour = "gray50") +
-                        geom_map(aes_string(map_id = "id", fill = quo_text(fill)),
-                                 map = shp_flat[shp_flat$hole_present == 1,],
-                                 colour = "gray50") +
-                        expand_limits(x = shp_flat$long, y = shp_flat$lat) +
-                        coord_map() +
+                                        x = max(shp$long),
+                                        y = min(shp$lat))
+                map <- ggplot(shp) +
+                        geom_sf(aes_string(fill = quo_text(fill))) +
+                        coord_sf(datum = NA) +
                         scale_fill_phe(name = "",
                                        "fingertips") +
                         theme_void() +
@@ -806,25 +803,28 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
                 data <- data %>%
                         mutate(!!quo_name(area_code) :=
                                        as.character(!!area_code))
-                shp@data[, join_field] <- as.character(shp@data[, join_field])
-                shp@data <- left_join(shp@data, data,
-                                           by = setNames(quo_text(area_code), join_field))
+                shp <- shp %>%
+                        mutate(AreaCode = as.character(!! quo(!! sym(join_field)))) %>%
+                        merge(data,
+                              by.x = "AreaCode",
+                              by.y = quo_text(area_code),
+                              all.x = TRUE)
                 value <- enquo(value)
                 if (!missing(name_for_label)) {
                         name_for_label <- enquo(name_for_label)
                         labels <- sprintf("<strong>%s</strong><br/>Value: %g",
-                                          pull(shp@data, !!name_for_label),
-                                          pull(shp@data, !!value))
+                                          pull(shp, !!name_for_label),
+                                          pull(shp, !!value))
                 } else {
                         labels <- sprintf("<strong>%s</strong><br/>Value: %g",
-                                          pull(shp@data, !!join_field),
-                                          pull(shp@data, !!value))
+                                          pull(shp, !!join_field),
+                                          pull(shp, !!value))
                 }
 
                 map <- leaflet(shp)  %>%
                         addTiles() %>%
                         addPolygons(fillColor =
-                                            ~factpal(pull(shp@data, !!fill)),
+                                            ~factpal(pull(shp, !!fill)),
                                     weight = 2,
                                     opacity = 1,
                                     color = "white",
@@ -845,6 +845,14 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'
 #' Returns ggplot of spine chart
 #' @return a ggplot object containing a spine chart
+#' @details the function draws a bar chart (which is the spine) and then plots
+#'   the data table (if datatable = TRUE) using geom_text. The bar chart is
+#'   always plotted between 0 and 1 on the x scale. The columns in the data
+#'   table are controlled by the header_positions argument. To adjust the length
+#'   of the bars in the visualisation, amend the header_positions argument. The
+#'   more negative the first value of the vector that goes into
+#'   header_positions, the more condensed the bar part of the visualisation will
+#'   be.
 #' @param data a data frame to create the spine chart from. the data frame
 #'   should contain data for all area types included in the chart (eg, if
 #'   plotting for County & UA with a comparator of region and a median line for
@@ -863,7 +871,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #' @param polarity unquoted field name containing the polarity information
 #'   (currently only handles polarity returned by fingertipsR package)
 #' @param significance unquoted field name describing the statistical
-#'   significance for that indicator (eg, Better, Worse, Same etc)
+#'   significance for that indicator (eg, Better, Worse, Similar etc)
 #' @param area_type unquoted field name containing area type information. This
 #'   ensures the vertabra are only plotted for the same area types as the
 #'   local_area area type (eg, when plotting a spine chart for County & UA
@@ -903,7 +911,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'   wishing to split the spine chart into domains
 #' @param relative_domain_text_size numeric; control the text size for the
 #'   domain labels (if include.domains = TRUE) relative to 1
-#' @param datatable boolean; default = TRUE, display data table alongside spine
+#' @param datatable logical; default = TRUE, display data table alongside spine
 #'   chart
 #' @param indicator_label_nudgex number; nudge the placement of the indicator
 #'   label in the x direction. Negative values nudge to the left

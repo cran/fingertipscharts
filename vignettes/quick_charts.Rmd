@@ -22,9 +22,6 @@ library(fingertipsR)
 library(fingertipscharts)
 library(dplyr)
 library(tidyr)
-library(broom)
-library(geojsonio)
-library(leaflet)
 ```
 
 ## Overview {#overview}
@@ -110,7 +107,7 @@ ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca
 
 ```{r static reorder}
 ordered_levels <- c("Better",
-                    "Same", 
+                    "Similar", 
                     "Worse",
                     "Not compared")
 df <- df %>%
@@ -196,7 +193,7 @@ df <- fingertips_data(90316) %>%
 
 ```{r compare areas reorder}
 ordered_levels <- c("Better",
-                    "Same", 
+                    "Similar", 
                     "Worse",
                     "Not compared")
 df <- df %>%

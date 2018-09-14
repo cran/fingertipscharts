@@ -3,9 +3,6 @@ library(fingertipsR)
 library(fingertipscharts)
 library(dplyr)
 library(tidyr)
-library(broom)
-library(geojsonio)
-library(leaflet)
 
 ## ----overview data, message=FALSE----------------------------------------
 region <- "North East region"
@@ -62,7 +59,7 @@ ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca
 
 ## ----static reorder------------------------------------------------------
 ordered_levels <- c("Better",
-                    "Same", 
+                    "Similar", 
                     "Worse",
                     "Not compared")
 df <- df %>%
@@ -124,7 +121,7 @@ df <- fingertips_data(90316) %>%
 
 ## ----compare areas reorder-----------------------------------------------
 ordered_levels <- c("Better",
-                    "Same", 
+                    "Similar", 
                     "Worse",
                     "Not compared")
 df <- df %>%
