@@ -141,17 +141,9 @@ p <- compare_areas(df, AreaName, Value,
 p
 
 ## ----area profiles data, cache=TRUE--------------------------------------
-dfspine<- fingertips_data(DomainID = 1938132762,
-                          rank = TRUE) %>%
-        filter(((IndicatorID == 41001 &
-                         Timeperiod == "2014 - 16" &
-                         Sex == "Persons") |
-                        (IndicatorID == 91393 &
-                                 Timeperiod == "2011 - 15" &
-                                 Sex == "Female") |
-                        (IndicatorID == 92607 &
-                                 Timeperiod == "2016" &
-                                 Sex == "Not applicable")))
+dfspine <- fingertips_data(DomainID = 1938133060, rank = TRUE) %>%
+        filter(Timeperiod == "2016",
+               Age == "All ages")
 
 ## ----area profiles, warning=FALSE, out.width='100%', fig.width=10, fig.height=4.5----
 p <- area_profiles(dfspine,
