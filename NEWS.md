@@ -1,4 +1,10 @@
-# fingertipscharts 0.0.3
+# fingertipscharts 0.0.4
+
+* added copyright_year argument to map function
+* improved code coverage
+* `area_profiles()` now should display the "Best/Highest" label better
+
+# fingertipscharts 0.0.3 (2018-12-12)
 
 * Improved functionality for `area_profiles()` to accept field names other than `IndicatorName` and `Polarity` for those two arguments
 

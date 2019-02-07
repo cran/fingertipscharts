@@ -141,9 +141,8 @@ p <- compare_areas(df, AreaName, Value,
 p
 
 ## ----area profiles data, cache=TRUE--------------------------------------
-dfspine <- fingertips_data(DomainID = 1938133060, rank = TRUE) %>%
-        filter(Timeperiod == "2016",
-               Age == "All ages")
+dfspine <- fingertips_data(DomainID = 1938133222, rank = TRUE) %>%
+        filter(Timeperiod == "2016")
 
 ## ----area profiles, warning=FALSE, out.width='100%', fig.width=10, fig.height=4.5----
 p <- area_profiles(dfspine,
@@ -160,10 +159,10 @@ p <- area_profiles(dfspine,
                    median_line_area_code = "E92000001",
                    comparator_area_code = "E12000005",
                    datatable = TRUE,
+                   header_positions = c(-1.43, -0.63, -0.43, -0.31, -0.19, -0.05, 1.08),
                    relative_domain_text_size = 0.75,
                    relative_text_size = 1.2,
-                   bar_width = 0.68,
-                   indicator_label_nudgex = -0.5)
+                   bar_width = 0.68)
 p
 
 ## ----population data-----------------------------------------------------
