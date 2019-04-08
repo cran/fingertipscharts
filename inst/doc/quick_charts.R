@@ -30,8 +30,9 @@ p
 ## ----compare indicators data---------------------------------------------
 df <- fingertips_data(c(90362, 90366)) %>%
         group_by(IndicatorID) %>%
-        filter(TimeperiodSortable == max(TimeperiodSortable) &
-                       Sex == "Male") %>%
+        filter(TimeperiodSortable == max(TimeperiodSortable),
+               Sex == "Male",
+               Age == "All ages") %>%
         ungroup() %>%
         select(IndicatorID, AreaName, Value) %>%
         mutate(IndicatorID = paste0("x", IndicatorID)) %>%
@@ -90,7 +91,8 @@ p
 
 ## ----trends get data-----------------------------------------------------
 df <- fingertips_data(90366) %>%
-        filter(Sex == "Male")
+        filter(Sex == "Male",
+               Age == "All ages")
 
 ## ----trends, out.width='70%', fig.width=9, fig.height=5, fig.align='center'----
 p <- trends(df,
@@ -198,8 +200,9 @@ p
 
 ## ----boxplots data-------------------------------------------------------
 df <- fingertips_data(90366) %>%
-        filter(Sex == "Male" &
-                       AreaType == "County & UA")
+        filter(Sex == "Male",
+               AreaType == "County & UA",
+               Age == "All ages")
 
 ## ----boxplots, out.width='80%', fig.width=10, fig.height=7, fig.align='center'----
 p <- box_plots(df,

@@ -1,6 +1,10 @@
-# fingertipscharts 0.0.4
+# fingertipscharts 0.0.5
 
-* added copyright_year argument to map function
+* `area_profiles()` - users have control on number of decimal places to display non-count values at (including different decimal places for different indicators)
+
+# fingertipscharts 0.0.4 (2019-02-07)
+
+* added copyright_year argument to `map` function
 * improved code coverage
 * `area_profiles()` now should display the "Best/Highest" label better
 

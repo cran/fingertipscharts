@@ -78,12 +78,21 @@ create_datatable <- function(data, indicator,
                                          (!!area_code) == comparator_area_code ~ "Comparator_value",
                                          TRUE ~ "Error"),
                        !!quo_name(value) := as.character(!!value),
+                       dps_2b_removed = !!dps,
                        !!quo_name(value) := suppressWarnings(case_when(
                                is.na(as.numeric(!!value)) ~ !!value,
-                               TRUE ~ paste0("\'",
-                                             format(comma(round2(as.numeric(!!value), dps),
-                                                          accuracy = 1 / (10 * dps)), nsmall = 1),
-                                             "\'")))) %>%
+                               TRUE ~ ifelse(
+                                       !is.na(dps_2b_removed), paste0("\'",
+                                                                      format(comma(round2(as.numeric(!!value), dps),
+                                                                                   accuracy = 1 / (10 ^ dps)), nsmall = 1),
+                                                                      "\'"),
+                                       paste0("\'",
+                                              formatC(as.numeric(!!value),
+                                                      format = "f",
+                                                      big.mark = ",",
+                                                      drop0trailing = TRUE),
+                                              "\'")
+                                       )))) %>%
                 select(!!indicator, !!area_code, !!timeperiod, !!value) %>%
                 tidyr::spread(!!area_code, !!value)
         data_count <- data %>%
@@ -284,11 +293,18 @@ spine_rescaler <- function(data,
                 select(!!indicator, Best, Worst) %>%
                 gather(GraphPoint, label, Best:Worst) %>%
                 mutate(y = ifelse(GraphPoint == "Best", 1.05, -0.05),
+                       dps_2b_removed = dps,
                        label = ifelse(is.na(label),
                                       NA,
-                                      format(comma(round2(as.numeric(label), dps),
-                                                   accuracy = 1 / (10 * dps)), nsmall = 1)),
-                       GraphPoint = factor(GraphPoint, levels = c("Best","Q75","Q25","Worst")))
+                                      ifelse(!is.na(dps_2b_removed),
+                                             format(comma(round2(as.numeric(label), dps),
+                                                          accuracy = 1 / (10 ^ dps)), nsmall = 1),
+                                             formatC(as.numeric(label),
+                                                     format = "f",
+                                                     big.mark = ",",
+                                                     drop0trailing = TRUE))),
+                       GraphPoint = factor(GraphPoint, levels = c("Best","Q75","Q25","Worst"))) %>%
+                select(-(dps_2b_removed))
 
         timeperiod <- data %>%
                 select(!!indicator, !!timeperiod) %>%
