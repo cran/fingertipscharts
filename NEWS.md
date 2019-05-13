@@ -1,4 +1,8 @@
-# fingertipscharts 0.0.5
+# fingertipscharts 0.0.6
+
+* `display.values` argument added to `compare_areas()` function - allowing users to display the values alongside the bars in the chart
+
+# fingertipscharts 0.0.5 (2019-04-08)
 
 * `area_profiles()` - users have control on number of decimal places to display non-count values at (including different decimal places for different indicators)
 
