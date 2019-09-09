@@ -52,7 +52,7 @@ p
 ## ----map get data--------------------------------------------------------
 df <- fingertips_data(90366) %>%
         filter(Sex == "Male" &
-                       AreaType == "County & UA" &
+                       AreaType == "County & UA (pre 4/19)" &
                        TimeperiodSortable == max(TimeperiodSortable))
 
 ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
@@ -201,7 +201,7 @@ p
 ## ----boxplots data-------------------------------------------------------
 df <- fingertips_data(90366) %>%
         filter(Sex == "Male",
-               AreaType == "County & UA",
+               AreaType == "County & UA (pre 4/19)",
                Age == "All ages")
 
 ## ----boxplots, out.width='80%', fig.width=10, fig.height=7, fig.align='center'----

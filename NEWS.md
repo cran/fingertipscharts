@@ -1,12 +1,18 @@
-# fingertipscharts 0.0.8
+# fingertipscharts 0.0.9
+
+* added example to `area_profiles()` to show how to specify the order of indicators and how to show domains
+* graceful fail if ons_api provided to map() function isn't responding
+
+
+# fingertipscharts 0.0.8 (2019-07-18)
 
 * No updates from a user perspective
 
-# fingertipscharts 0.0.7
+# fingertipscharts 0.0.7 
 
 * No updates from a user perspective
 
-# fingertipscharts 0.0.6
+# fingertipscharts 0.0.6 (2019-05-13)
 
 * `display.values` argument added to `compare_areas()` function - allowing users to display the values alongside the bars in the chart
 

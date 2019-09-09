@@ -89,8 +89,9 @@ the spine chart}
 accompanying table}
 
 \item{header_positions}{numeric vector; used to adjust columns of data table
-if they are overlapping. Must have a length of 7. Defaults to c(-1.43,
--.53, -.35, -.25, -.15, -0.05, 1.05)}
+if they are overlapping. The final value shouldn't be less than 1. Must
+have a length of 7. Defaults to c(-1.43, -.53, -.35, -.25, -.15, -0.05,
+1.05)}
 
 \item{header_labels}{character vector; labels used for the titles of the
 columns for a data table. Must have a length of 7. Defaults to
@@ -202,4 +203,37 @@ full_p <- area_profiles(df,
                                              -0.15, -0.05, 1.08),
                         dps = NA)
 full_p
+
+## or an example with domains and non-default indicator ordering
+
+df <- create_test_data()
+label_order <- c(1, 2, 4, 3, 6, 5)
+df <- df \%>\%
+        mutate(IndicatorName = factor(IndicatorName,
+                                      levels = paste("Indicator", label_order)))
+
+p <- area_profiles(df,
+                   value = Value,
+                   count = Count,
+                   area_code = AreaCode,
+                   local_area_code = "AC122",
+                   indicator = IndicatorName,
+                   timeperiod = Timeperiod,
+                   polarity = Polarity,
+                   significance = Significance,
+                   area_type = AreaType,
+                   median_line_area_code = "C001",
+                   comparator_area_code = "PAC12",
+                   datatable = TRUE,
+                   relative_domain_text_size = 0.75,
+                   relative_text_size = 1.2,
+                   bar_width = 0.68,
+                   indicator_label_nudgex = -0.1,
+                   show_dividers = "outer",
+                   header_positions = c(-0.7, -0.53, -0.35, -0.25,
+                                        -0.15, -0.05, 1.05),
+                   domain = Domain
+)
+p
+
 }

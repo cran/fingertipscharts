@@ -6,7 +6,7 @@ library(dplyr)
 if (curl::has_internet()){
         df <- fingertips_data(90366) %>%
                 filter(Sex == "Male",
-                       AreaType == "County & UA",
+                       AreaType == "County & UA (pre 4/19)",
                        Timeperiod == "2014 - 16",
                        Age == "All ages")
         ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
@@ -51,6 +51,19 @@ if (curl::has_internet()){
                                  title = "Life expectancy at birth",
                                  subtitle = "Males in Upper Tier Local Authorities England"),
                              "There is no clear field in the shape file that contains the area codes in the field you have identified")
+                expect_error(map(df,
+                                 ons_api = "httpstat.us/500",
+                                 area_code = AreaCode,
+                                 fill = ComparedtoEnglandvalueorpercentiles,
+                                 title = "Life expectancy at birth",
+                                 subtitle = "Males in Upper Tier Local Authorities England"),
+                             "The ons_api provided is currently unavailable")
+                expect_error(map(df,
+                                 area_code = AreaCode,
+                                 fill = ComparedtoEnglandvalueorpercentiles,
+                                 title = "Life expectancy at birth",
+                                 subtitle = "Males in Upper Tier Local Authorities England"),
+                             "ons_api must contain a string to a geojson url on the ONS geography portal")
         })
 }
 
