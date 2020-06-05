@@ -4,8 +4,21 @@
 \alias{create_datatable}
 \title{Data table supporting information}
 \usage{
-create_datatable(data, indicator, area_code, timeperiod, count, value,
-  local_area_code, median_line_area_code, comparator_area_code, dps = 1)
+create_datatable(
+  data,
+  indicator,
+  area_code,
+  timeperiod,
+  trend,
+  count,
+  value,
+  local_area_code,
+  median_line_area_code,
+  comparator_area_code,
+  dps = 1,
+  header_width,
+  horizontal_arrow_multiplier
+)
 }
 \arguments{
 \item{data}{a data frame to create the spine chart from. the data frame
@@ -23,6 +36,17 @@ should all exist in this field)}
 
 \item{timeperiod}{unquoted field name of the time period field}
 
+\item{trend}{unquoted field name of the trend field; if the user doesn't want
+to display trend information then leave this incomplete and amend the
+header_labels argument to remove the Trend header. Text within this field
+should contain one of the following words to control the arrows that are
+displayed; "decreasing", "increasing", "no significant change", "could not
+be calculated". The text within this field should contain one of the
+following words to control the colour; "better", "worse", "no significant
+change". If none of these words appear in the string, the words
+"increasing" or "decreasing" will be used to colour the arrows in different
+shades of blue"}
+
 \item{count}{unquoted field name where the count (numerator) is stored}
 
 \item{value}{unquoted field name containing the values to be plotted}
@@ -37,6 +61,12 @@ to "E92000001" (England)}
 Defaults to NA}
 
 \item{dps}{number of decimal places to use in the data table}
+
+\item{header_width}{x dimension of chart to be used for normalising the arrow
+length when horizonal}
+
+\item{horizontal_arrow_multiplier}{number to scale horizontal trend arrows. A
+value below 1 will shorten the arrows}
 }
 \value{
 A data frame containing the information that sits alongside the spine

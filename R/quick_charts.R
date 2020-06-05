@@ -134,8 +134,8 @@ compare_areas <- function(data, area, value,
                 fill <- enquo(fill)
                 compare_areas <- compare_areas +
                         geom_col(aes_string(fill = quo_text(fill))) +
-                        scale_fill_phe(name = "Area compared to Benchmark",
-                                       theme = "fingertips")
+                        scale_fill_phe(theme = "fingertips") +
+                        labs(fill = "Area compared to Benchmark")
 
         } else {
                 compare_areas <- compare_areas +
@@ -189,6 +189,8 @@ compare_areas <- function(data, area, value,
 #' @param wrap_length number; maximum number of characters in indicator before
 #'   wrapping it
 #' @param value_label_size number; amount to scale the size of the value label
+#' @param legend_position the position of legends ("none", "left", "right",
+#'   "bottom", "top", or two-element numeric vector)
 #' @family quick charts
 #' @import ggplot2
 #' @import dplyr
@@ -217,71 +219,71 @@ compare_areas <- function(data, area, value,
 #' @export
 overview <- function(data, area, indicator, value,
                      fill, timeperiod, top_areas, wrap_length = 50,
-                     value_label_size = 1) {
-        area <- enquo(area)
-        value <- enquo(value)
-        indicator <- enquo(indicator)
-        fill <- enquo(fill)
-        value <- enquo(value)
-        timeperiod <- enquo(timeperiod)
+                     value_label_size = 1, legend_position = "none") {
+
 
         if (!missing(top_areas)) {
                 levels <- data %>%
-                        filter(!((!!area) %in% top_areas)) %>%
+                        filter(!(({{ area }}) %in% top_areas)) %>%
                         droplevels() %>%
-                        arrange((!!area)) %>%
-                        select(!!area) %>%
+                        arrange(({{ area }})) %>%
+                        select({{ area }}) %>%
                         pull() %>%
                         as.character() %>%
                         unique()
                 levels <- c("Period", top_areas, levels)
                 data <- data %>%
-                        mutate(!!quo_name(area) :=
-                                       factor((!!area),
+                        mutate(!!quo_name(enquo(area)) :=
+                                       factor(({{ area }}),
                                               levels = levels))
         } else {
                 levels <- data %>%
                         droplevels() %>%
-                        arrange(!!area) %>%
-                        select(!!area) %>%
+                        arrange({{ area }}) %>%
+                        select({{ area }}) %>%
                         pull() %>%
                         as.character() %>%
                         unique()
                 data <- data %>%
-                        mutate(!!quo_name(area) :=
-                                       factor((!!area),
+                        mutate(!!quo_name(enquo(area)) :=
+                                       factor(({{ area }}),
                                               levels = c("Period", levels)))
         }
         tp <- data %>%
-                filter((!!area) == levels[2]) %>%
-                mutate(!!quo_name(area) := "Period",
-                       !!quo_name(fill) := NA,
-                       !!quo_name(value) :=
-                               as.character(str_wrap((!!timeperiod), 9)))
+                filter(({{ area }}) == levels[2]) %>%
+                mutate(!!quo_name(enquo(area)) := "Period",
+                       !!quo_name(enquo(fill)) := NA,
+                       !!quo_name(enquo(value)) :=
+                               as.character(str_wrap(({{ timeperiod }}), 9)))
+
+
         data <- rbind(data, tp)
         levels <- data %>%
                 droplevels() %>%
-                arrange(!!indicator) %>%
-                select(!!indicator) %>%
+                arrange({{ indicator }}) %>%
+                select({{ indicator }}) %>%
                 pull() %>%
                 as.character() %>%
                 rev() %>%
                 unique() %>%
                 str_wrap(wrap_length)
         data <- data %>%
-                mutate(!!quo_name(indicator) :=
-                               factor(str_wrap((!!indicator), wrap_length),
-                                      levels = levels))
+                mutate(!!quo_name(enquo(indicator)) :=
+                               factor(str_wrap(({{ indicator }}), wrap_length),
+                                      levels = levels)) %>%
+                droplevels()
 
-        overview <- ggplot(data, aes_string(x = quo_text(area),
-                                            y = quo_text(indicator))) +
-                geom_tile(aes_string(fill = quo_text(fill)),
+        overview <- ggplot(data, aes(x = {{ area }},
+                                     y = {{ indicator }})) +
+                geom_tile(aes(fill = {{ fill }}),
                           colour = "white") +
-                geom_text(aes_string(label = quo_text(value)),
+                geom_text(aes(label = {{ value }}),
                           size = value_label_size * 4) +
-                scale_fill_phe("fingertips") +
+                scale_fill_phe("fingertips",
+                               na.translate = FALSE,
+                               guide = guide_legend(byrow = TRUE)) +
                 scale_x_discrete(position = "top") +
-                theme(legend.position = "none",
+                theme(legend.position = legend_position,
                       axis.text.x = element_text(angle = 90,
                                                  hjust = 0),
                       axis.text.y = element_text(size = rel(1)),
@@ -414,7 +416,6 @@ compare_indicators <- function(data, x, y,
 #' @family quick charts
 #' @import ggplot2
 #' @import dplyr
-#' @importFrom rlang quo_text
 #' @examples
 #' library(dplyr)
 #' df <- create_test_data()
@@ -447,25 +448,28 @@ trends <- function(data, timeperiod, value,
         value <- enquo(value)
         area <- enquo(area)
 
+        data <- data %>%
+                filter((!!area) %in% c(area_name, comparator))
+        line_colours <- c("black", "#7CB5EC")
+        names(line_colours) <- c(comparator, area_name)
         trends <- ggplot(data,
-                         aes_string(x = quo_text(timeperiod),
-                                    y = quo_text(value),
-                                    group = quo_text(area))) +
-                geom_line(data = filter(data, (!!area) == comparator),
-                          colour = "black",
-                          aes_string(linetype = quo_text(area))) +
+                         aes(x = !!timeperiod,
+                             y = !!value,
+                             group = !!area)) +
+                geom_line(aes(linetype = !!area,
+                              colour = !!area)) +
                 geom_point(data = filter(data, (!!area) == comparator),
                            fill = "black",
-                           aes_string(shape = quo_text(area)),
+                           aes(shape = !!area),
                            size = point_size) +
-                geom_line(data = filter(data, (!!area) == area_name),
-                          colour = "#7CB5EC") +
                 scale_linetype_manual(name = "",
-                                      values = "solid",
+                                      values = rep("solid", 2),
                                       labels = comparator) +
                 scale_shape_manual(name = "",
                                    values = 21,
                                    labels = comparator) +
+                scale_colour_manual(name = "",
+                                    values = line_colours) +
                 labs(title = title,
                      subtitle = subtitle,
                      x = xlab,
@@ -476,7 +480,7 @@ trends <- function(data, timeperiod, value,
                 fill <- enquo(fill)
                 trends <- trends +
                         geom_point(data = filter(data, (!!area) == area_name),
-                                   aes_string(fill = quo_text(fill)),
+                                   aes(fill = !!fill),
                                    shape = 21,
                                    size = point_size, show.legend = F) +
                         scale_fill_phe("fingertips")
@@ -492,11 +496,14 @@ trends <- function(data, timeperiod, value,
                 upperci <- enquo(upperci)
                 trends <- trends +
                         geom_errorbar(data = filter(data, (!!area) == area_name),
-                                      aes_string(ymin= quo_text(lowerci),
-                                          ymax = quo_text(upperci)),
+                                      aes(ymin= !!lowerci,
+                                          ymax = !!upperci),
                                       width=.2)
 
         }
+        trends <- trends +
+                guides(shape = FALSE,
+                       linetype = FALSE)
         return(trends)
 }
 
@@ -516,7 +523,7 @@ trends <- function(data, timeperiod, value,
 #' @import ggplot2
 #' @import dplyr
 #' @importFrom rlang quo_text
-#' @importFrom scales pretty_breaks
+#' @importFrom scales breaks_pretty
 #' @examples
 #' library(dplyr)
 #' agelevels <- c("0-4", "5-9","10-14","15-19",
@@ -581,7 +588,7 @@ population <- function(data, value, sex, age,
                        !!quo_name(value) :=
                                ifelse((!!sex) == "Male",
                                       -(!!value), (!!value)))
-        extremex <- pretty_breaks(n = 3)(0:max(abs(pull(data, !!value)),
+        extremex <- breaks_pretty(n = 3)(0:max(abs(pull(data, !!value)),
                                                na.rm = T))
         population <- ggplot(filter(data, (!!area) == area_name),
                              aes_string(y = quo_text(value),
@@ -740,6 +747,7 @@ box_plots <- function(data, timeperiod, value,
 #' @importFrom stats setNames
 #' @importFrom sf st_as_sf
 #' @examples
+#' \dontrun{
 #' ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
 #'
 #' p <- map(mapdata,
@@ -761,7 +769,7 @@ box_plots <- function(data, timeperiod, value,
 #'          value = Value,
 #'          name_for_label = AreaName,
 #'          title = "An indicator for Upper Tier<br>Local Authorities England")
-#' p
+#' p}
 #' @export
 map <- function(data, ons_api, area_code, fill, type = "static", value, name_for_label,
                 title = "", subtitle = "", copyright_size = 4, copyright_year = Sys.Date()) {
@@ -809,8 +817,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
                         map <- ggplot(shp) +
                                 geom_sf(aes_string(fill = quo_text(fill))) +
                                 coord_sf(datum = NA) +
-                                scale_fill_phe(name = "",
-                                               "fingertips") +
+                                scale_fill_phe(theme = "fingertips") +
                                 theme_void() +
                                 geom_text(data = copyright,
                                           aes(x = x,
@@ -821,7 +828,8 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
                                           vjust = 0,
                                           size = copyright_size) +
                                 labs(title = title,
-                                     subtitle = subtitle)
+                                     subtitle = subtitle,
+                                     fill = "")
 
                 } else if (type == "interactive") { # nocov start
                         ftipspal <- scale_fill_phe("fingertips")
@@ -903,6 +911,16 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'   labels. Take care as errors will occur where indicator labels are the same
 #'   but data exist for multiple sub-categories (for example, sex or age)
 #' @param timeperiod unquoted field name of the time period field
+#' @param trend unquoted field name of the trend field; if the user doesn't want
+#'   to display trend information then leave this incomplete and amend the
+#'   header_labels argument to remove the Trend header. Text within this field
+#'   should contain one of the following words to control the arrows that are
+#'   displayed; "decreasing", "increasing", "no significant change", "could not
+#'   be calculated". The text within this field should contain one of the
+#'   following words to control the colour; "better", "worse", "no significant
+#'   change". If none of these words appear in the string, the words
+#'   "increasing" or "decreasing" will be used to colour the arrows in different
+#'   shades of blue"
 #' @param polarity unquoted field name containing the polarity information
 #'   (currently only handles polarity returned by fingertipsR package)
 #' @param significance unquoted field name describing the statistical
@@ -961,6 +979,12 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'   table
 #' @param percent_display number between 0 and 1; the percentage of values that
 #'   needs to exist for a spine to display. Default is 0.25
+#' @param arrow_length number to control the length of the trend arrow
+#' @param arrow_thickness number to control the thickness of the trend arrow
+#' @param arrow_head_length number to control the length of the arrow head
+#' @param arrow_head_angle number to control the angle of the arrow head
+#' @param horizontal_arrow_multiplier number to scale horizontal trend arrows. A
+#'   value below 1 will shorten the arrows
 #' @details This function filters for the area type that is the same as your
 #'   local area type and then calculates the "vertebra" from those data.
 #'   Therefore, if you are comparing outputs with those seen on the Fingertips
@@ -970,11 +994,10 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #' @import ggplot2
 #' @import dplyr
 #' @importFrom grDevices rgb
-#' @importFrom rlang quo_text
+#' @importFrom rlang quo_text .data
 #' @importFrom utils tail
 #' @importFrom stats reformulate
 #' @importFrom stringr str_trim
-#' @importFrom lemon facet_rep_grid
 #' @examples
 #' ## An example with differing decimal places for individual indicators
 #'
@@ -990,6 +1013,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'                         local_area_code = "AC122",
 #'                         indicator = IndicatorName,
 #'                         timeperiod = Timeperiod,
+#'                         trend = Trend,
 #'                         polarity = Polarity,
 #'                         significance = Significance,
 #'                         area_type = AreaType,
@@ -1001,7 +1025,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'                         bar_width = 0.68,
 #'                         indicator_label_nudgex = -0.1,
 #'                         show_dividers = "outer",
-#'                         header_positions = c(-0.7, -0.44, -0.35, -0.25,
+#'                         header_positions = c(-1, -0.7, -0.44, -0.35, -0.25,
 #'                                              -0.15, -0.05, 1.08),
 #'                         dps = NA)
 #' full_p
@@ -1021,6 +1045,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'                    local_area_code = "AC122",
 #'                    indicator = IndicatorName,
 #'                    timeperiod = Timeperiod,
+#'                    trend = Trend,
 #'                    polarity = Polarity,
 #'                    significance = Significance,
 #'                    area_type = AreaType,
@@ -1032,7 +1057,7 @@ map <- function(data, ons_api, area_code, fill, type = "static", value, name_for
 #'                    bar_width = 0.68,
 #'                    indicator_label_nudgex = -0.1,
 #'                    show_dividers = "outer",
-#'                    header_positions = c(-0.7, -0.53, -0.35, -0.25,
+#'                    header_positions = c(-1, -0.7, -0.53, -0.35, -0.25,
 #'                                         -0.15, -0.05, 1.05),
 #'                    domain = Domain
 #' )
@@ -1046,6 +1071,7 @@ area_profiles <- function(data,
                           local_area_code,
                           indicator,
                           timeperiod,
+                          trend = NA,
                           polarity,
                           significance,
                           area_type,
@@ -1060,8 +1086,9 @@ area_profiles <- function(data,
                           comparator_point_fill = "gray30",
                           relative_point_size = 1,
                           relative_text_size = 1,
-                          header_positions  = c(-1.43, -.53, -.35, -.25, -.15, -0.05, 1.05),
-                          header_labels = c("Indicator", "Time\nperiod",
+                          header_positions  = c(-1.83, -1.13, -.53, -.35, -.25, -.15, -0.05, 1.05),
+                          header_labels = c("Indicator", "Trend",
+                                            "Time\nperiod",
                                             "Local\ncount","Local\nvalue",
                                             "England\nvalue",
                                             "Worst/\nLowest","Best/\nHighest"),
@@ -1072,7 +1099,12 @@ area_profiles <- function(data,
                           datatable = TRUE,
                           datatable_line_height = 0.6,
                           dps = 1,
-                          percent_display = 0.25) {
+                          percent_display = 0.25,
+                          arrow_length = 1,
+                          arrow_thickness = 2,
+                          arrow_head_length = arrow_length / 3,
+                          arrow_head_angle = 25,
+                          horizontal_arrow_multiplier = 1) {
 
         test_area_code <- enquo(area_code)
         dummy_polarity <- enquo(polarity)
@@ -1084,6 +1116,10 @@ area_profiles <- function(data,
         if (!is.na(comparator_area_code) &
             sum(comparator_area_code %in% pull(data, !!test_area_code)) < 1)
                 stop(paste0(comparator_area_code, " not in area_code field provided"))
+        if (length(header_labels) != 8)
+                stop("header_labels argument must have a length of 8")
+        if (length(header_positions) != 8)
+                stop("header_positions argument must have a length of 8")
 
         data <- data %>%
                 mutate(!!quo_name(dummy_polarity) :=
@@ -1111,15 +1147,19 @@ area_profiles <- function(data,
 
         if (datatable == TRUE) {
                 if (!is.na(dps) & !is.integer(dps) & !is.numeric(dps)) stop("The dps argument must be a number or NA")
+                trend <- enquo(trend)
                 dftable <- create_datatable(data,
                                             indicator,
                                             area_code,
                                             timeperiod,
+                                            trend,
                                             count, value,
                                             local_area_code,
                                             median_line_area_code,
                                             comparator_area_code,
-                                            dps = dps)
+                                            dps = dps,
+                                            header_width = diff(range(header_positions)),
+                                            horizontal_arrow_multiplier = horizontal_arrow_multiplier)
                 dftable <- dftable %>%
                         mutate(!!quo_name(indicator) :=
                                                   factor(!!indicator,
@@ -1169,14 +1209,21 @@ area_profiles <- function(data,
                               all.x =TRUE)
         }
 
-        if (cols == "fingertips") {
-                cols <-  c('Better' = '#92D050', 'Same' = '#FFC000',
-                           'Worse' = '#C00000', 'Not compared' = '#C9C9C9',
-                           'None' = '#A6A6A6', 'Higher' = '#BED2FF',
-                           'Similar' = '#FFC000', 'Lower'='#5555E6',
-                           'Worst' = '#FFFFFF','Q25' = '#C9C9C9',
-                           'Q75' = '#8B8B8B','Best' = '#C9C9C9')
+        fingertips_cols <- c('Better' = '#92D050', 'Same' = '#FFC000',
+                             'Worse' = '#C00000', 'Not compared' = '#C9C9C9',
+                             'None' = '#A6A6A6', 'Higher' = '#BED2FF',
+                             'Similar' = '#FFC000', 'Lower'='#5555E6',
+                             'Worst' = '#FFFFFF','Q25' = '#C9C9C9',
+                             'Q75' = '#8B8B8B','Best' = '#C9C9C9')
+        if (length(cols) == 1) {
+                if (cols == "fingertips") {
+                        cols <- fingertips_cols
+                }
         }
+
+        missing_cols <- setdiff(names(fingertips_cols),
+                                names(cols))
+        if (length(missing_cols) > 0) cols <- c(cols, fingertips_cols[missing_cols])
 
         vline_length <- dfrescaled$bars %>%
                 pull(!!indicator) %>%
@@ -1224,6 +1271,7 @@ area_profiles <- function(data,
                 geom_hline(yintercept = 0.5, col = "darkred") +
                 coord_flip() +
                 scale_fill_manual(values = cols) +
+                scale_colour_manual(values = cols) +
                 theme_minimal() +
                 theme(panel.grid.major = element_blank(),
                       axis.text = element_text(colour = "black")) +
@@ -1244,7 +1292,7 @@ area_profiles <- function(data,
                 lims[1] <- lims[1] + indicator_label_nudgex
                 lims <- lims * 1.06
                 p <- p +
-                        scale_y_continuous(position = "bottom",
+                        scale_y_continuous(position = "right",
                                            breaks = header_positions,
                                            limits = lims,
                                            labels = header_labels,
@@ -1260,7 +1308,7 @@ area_profiles <- function(data,
                         geom_text(data = dftable,
                                   aes_string(label = dt_median_field,
                                              x = "ind"),
-                                  y = header_positions[5],
+                                  y = header_positions[6],
                                   col = "black",
                                   size = 2.5 * relative_text_size,
                                   parse = TRUE,
@@ -1270,7 +1318,7 @@ area_profiles <- function(data,
                         geom_text(data = dftable,
                                   aes_string(label = dt_area_field,
                                              x = "ind"),
-                                  y = header_positions[4],
+                                  y = header_positions[5],
                                   col = "black",
                                   size = 2.5 * relative_text_size,
                                   parse = TRUE,
@@ -1279,7 +1327,7 @@ area_profiles <- function(data,
                         ) +
                         geom_text(data = dftable,
                                   aes(label = count, x = ind),
-                                  y = header_positions[3],
+                                  y = header_positions[4],
                                   col = "black",
                                   size = 2.5 * relative_text_size,
                                   parse = TRUE,
@@ -1288,11 +1336,30 @@ area_profiles <- function(data,
                         ) +
                         geom_text(data = dftable,
                                   aes(label = tp, x = ind),
-                                  y = header_positions[2],
+                                  y = header_positions[3],
                                   col = "black",
                                   size = 2.5 * relative_text_size,
                                   lineheight = datatable_line_height,
                                   hjust = 1
+                        ) +
+                        geom_spoke(data = dftable,
+                                   aes(x = ind,
+                                       y = header_positions[2],
+                                       angle = .data$direction,
+                                       colour = .data$trend_sig,
+                                       radius = .data$radius * arrow_length),
+                                   size = arrow_thickness,
+                                   arrow = arrow(length = unit(arrow_head_length, "cm"),
+                                           type = "open",
+                                           angle = arrow_head_angle)
+                        ) +
+                        geom_spoke(data = dftable,
+                                   aes(x = ind,
+                                       y = header_positions[2],
+                                       angle = .data$direction + pi,
+                                       colour = .data$trend_sig,
+                                       radius = .data$radius * arrow_length),
+                                   size = arrow_thickness
                         ) +
                         geom_text(data = dftable,
                                   aes(label = ind,
@@ -1316,7 +1383,7 @@ area_profiles <- function(data,
         }
         if (quo_text(domain) != "no_domains") {
                 p <- p +
-                        facet_rep_grid(reformulate(".", quo_text(domain)),
+                        facet_grid(rows = quo_text(domain),
                                    space = "free_y",
                                    scales = "free_y",
                                    switch = "y") +
@@ -1329,11 +1396,12 @@ area_profiles <- function(data,
         }
         if (show_dividers == "all") {
                 p <- p +
-                        geom_vline(xintercept=seq(-0.5, vline_length + 0.5),
-                                   colour="black",
+                        geom_vline(xintercept = seq(-0.5, vline_length + 0.5),
+                                   colour = "black",
                                    size = 0.2)
         } else if (show_dividers == "outer") {
                 p <- p +
+                        annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
                         theme(axis.line.x = element_line())
         }
         if (header_positions[length(header_positions)] < 1) {

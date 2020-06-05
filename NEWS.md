@@ -1,4 +1,12 @@
-# fingertipscharts 0.0.10
+# fingertipscharts 0.0.11
+
+* trend argument added to `area_profiles()`
+* `trends()` function now displays the area and comparator in the key for the chart
+* slight amendment to `compare_areas()` and `map()` functions giving users flexibility to provide their own legend titles using `+ labs(fill = "Blah")` after function (see [issue 16](https://github.com/PublicHealthEngland/fingertipscharts/issues/16))
+* `overview()` function now has an argument for `legend_position` whose ordering is controlled by the levels of the field assigned to `fill`
+* fixed bug to allow users to modify the significance colours on spine chart
+
+# fingertipscharts 0.0.10 (2019-10-07)
 
 * Unnecessary warning messages for area_profiles() removed
 * Fixed bug around ordering of factors filling the interactive maps

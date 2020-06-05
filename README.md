@@ -31,66 +31,62 @@ Get the latest released, stable version from CRAN:
 install.packages("fingertipscharts")
 ```
 
-### With devtools
+### With remotes
 
 You can install the latest development version from github using
-[devtools](https://github.com/hadley/devtools):
+[remotes](https://github.com/r-lib/remotes):
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("PublicHealthEngland/fingertipscharts",
-                         build_vignettes = TRUE)
+# install.packages("remotes")
+remotes::install_github("PublicHealthEngland/fingertipscharts",
+                        build_vignettes = TRUE)
 ```
-
-### From zip
-
-Download this repository from GitHub and either build from source or do
-the following, that also requires
-[devtools](https://github.com/hadley/devtools):
-
-``` r
-source <- devtools:::source_pkg("C:/path/to/fingertipscharts-master")
-install(source)
-```
-
-### Base R instructions
-
-To install the package without the use of CRAN or
-[devtools](https://github.com/hadley/devtools), download the `.tar.gz`
-file and then run:
-
-``` r
-install.packages(path_to_file, repos = NULL, type="source")
-```
-
-Where `path_to_file` would represent the full path and file name.
 
 ## Example of some visualisations
 
-Here are a couple of example visualisations the package provides. See
-the vignettes for a more comprehensive overview.
+Here are some examples of visualisations the package provides. See the
+[vignette](https://cran.r-project.org/package=fingertipscharts/vignettes/quick_charts.html)
+for a more comprehensive overview.
 
 ### Trends
 
 ``` r
-library(fingertipsR)
 library(fingertipscharts)
 library(dplyr)
-df <- fingertips_data(90366) %>%
-          filter(Sex == "Male")
+
+# Create the data to plot
+df <- create_test_data() %>%
+        arrange(IndicatorName) %>%
+        mutate(Timeperiod = rep(c("2011", "2012", "2013", "2014", "2015", "2016"),
+                                each = 111))
+country_val <- df %>%
+  filter(AreaCode == "C001") %>%
+  select(Timeperiod, Country_val = Value)
+
+# add the signifance for the local area points compared to the comparator
+df <- df %>%
+  left_join(country_val, by = "Timeperiod") %>%
+  mutate(Significance = case_when(
+    LCI > Country_val ~ "Higher",
+    UCI < Country_val ~ "Lower",
+    TRUE ~ "Similar"
+  ))
+
+# plot the trends
+
 p <- trends(df,
             timeperiod = Timeperiod,
             value = Value,
-            area = AreaName,
-            comparator = "England",
-            area_name = "Cambridgeshire",
-            fill = ComparedtoEnglandvalueorpercentiles,
-            lowerci = LowerCI95.0limit,
-            upperci = UpperCI95.0limit,
-            title = "Life expectancy at birth",
-            subtitle = "Cambridgeshire compared to England",
+            area = AreaCode,
+            comparator = "C001",
+            area_name = "AC103",
+            fill = Significance,
+            lowerci = LCI,
+            upperci = UCI,
+            title = "Title of graph",
+            subtitle = "AC103 compared to C001",
             xlab = "Year",
-            ylab = "Age (years)")
+            ylab = "Unit of measurement")
 p
 ```
 
@@ -99,24 +95,65 @@ p
 ### Compare indicators
 
 ``` r
-library(tidyr)
-df <- fingertips_data(c(90362, 90366)) %>%
-        group_by(IndicatorID) %>%
-        filter(Timeperiod == "2014 - 16" &
-                       Sex == "Male") %>%
-        ungroup() %>%
-        select(IndicatorID, AreaName, Value) %>%
-        mutate(IndicatorID = paste0("x", IndicatorID)) %>%
-        spread(IndicatorID, Value)
-p <- compare_indicators(df,
-                        x = x90362,
-                        y = x90366,
-                        xlab = "Healthy life expectancy at birth",
-                        ylab = "Life expectancy at birth",
-                        highlight_area = c("England", "Dorset"),
-                        area = AreaName,
-                        add_R2 = TRUE)
+# Create the data to plot, filtering for areas within a single parent, and also the parent and the national area
+region <- "PAC10"
+top_names <- c("C001", region)
+df <- create_test_data() %>%
+  filter(IndicatorName == "Indicator 3",
+         (ParentAreaCode == region |
+            AreaCode %in% top_names))
+
+# order the factor for the significance field so they appear in the legend in the desired order
+ordered_levels <- c("Better",
+                    "Similar", 
+                    "Worse",
+                    "Not compared")
+df <- df %>%
+        mutate(Significance = 
+                       factor(Significance,
+                              levels = ordered_levels))
+
+# plot compare areas chart
+p <- compare_areas(df,
+                   AreaCode, 
+                   Value,
+                   fill = Significance,
+                   lowerci = LCI,
+                   upperci = UCI,
+                   order = "desc",
+                   top_areas = top_names,
+                   title = unique(df$IndicatorName))
 p
 ```
 
 ![](tools/README-compare-indicators-1.png)<!-- -->
+
+# Area profiles
+
+``` r
+dfspine <- create_test_data()
+p <- area_profiles(dfspine,
+                   value = Value,
+                   count = Count,
+                   area_code = AreaCode,
+                   local_area_code = "AC122",
+                   indicator = IndicatorName,
+                   timeperiod = Timeperiod,
+                   trend = Trend,
+                   polarity = Polarity,
+                   significance = Significance,
+                   area_type = AreaType,
+                   median_line_area_code = "C001",
+                   comparator_area_code = "PAC12",
+                   datatable = TRUE,
+                   relative_domain_text_size = 0.75,
+                   relative_text_size = 1.2,
+                   bar_width = 0.68,
+                   indicator_label_nudgex = -0.1,
+                   show_dividers = "outer",
+                   header_positions = c(-1, -0.7, -0.44, -0.35, -0.25,
+                       -0.15, -0.05, 1.08))
+p
+```
+
+<img src="tools/README-area_profiles-1.png" width="100%" />

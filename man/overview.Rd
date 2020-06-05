@@ -4,8 +4,18 @@
 \alias{overview}
 \title{Plot an overview (tartan rug) of multiple indicators}
 \usage{
-overview(data, area, indicator, value, fill, timeperiod, top_areas,
-  wrap_length = 50, value_label_size = 1)
+overview(
+  data,
+  area,
+  indicator,
+  value,
+  fill,
+  timeperiod,
+  top_areas,
+  wrap_length = 50,
+  value_label_size = 1,
+  legend_position = "none"
+)
 }
 \arguments{
 \item{data}{data.frame object to plot using ggplot2 functions}
@@ -26,6 +36,9 @@ overview(data, area, indicator, value, fill, timeperiod, top_areas,
 wrapping it}
 
 \item{value_label_size}{number; amount to scale the size of the value label}
+
+\item{legend_position}{the position of legends ("none", "left", "right",
+"bottom", "top", or two-element numeric vector)}
 }
 \value{
 a ggplot of the overview/tartan rug plot
@@ -55,9 +68,12 @@ p <- overview(df_over,
 p
 }
 \seealso{
-Other quick charts: \code{\link{box_plots}},
-  \code{\link{compare_areas}},
-  \code{\link{compare_indicators}}, \code{\link{map}},
-  \code{\link{population}}, \code{\link{trends}}
+Other quick charts: 
+\code{\link{box_plots}()},
+\code{\link{compare_areas}()},
+\code{\link{compare_indicators}()},
+\code{\link{map}()},
+\code{\link{population}()},
+\code{\link{trends}()}
 }
 \concept{quick charts}

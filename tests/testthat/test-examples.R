@@ -113,9 +113,11 @@ test_that("box plot example draws correctly", {
         )
 })
 
-if(curl::has_internet()) {
+context("map-example")
 
-        context("map-example")
+
+test_that("map example draws correctly", {
+        skip_if_offline()
         ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
 
         p <- fingertipscharts::map(mapdata,
@@ -125,13 +127,10 @@ if(curl::has_internet()) {
                                    title = "Map example",
                                    subtitle = "An indicator for Upper Tier Local Authorities England",
                                    copyright_year = 2019)
-
-        test_that("map example draws correctly", {
-                vdiffr::expect_doppelganger("map example",
-                                            p
-                )
-        })
-}
+        vdiffr::expect_doppelganger("map example",
+                                    p
+        )
+})
 
 context("area-profiles-example")
 df <- create_test_data() %>%
@@ -145,6 +144,7 @@ full_p <- area_profiles(df,
                         local_area_code = "AC122",
                         indicator = IndicatorName,
                         timeperiod = Timeperiod,
+                        trend = Trend,
                         polarity = Polarity,
                         significance = Significance,
                         area_type = AreaType,
@@ -156,7 +156,7 @@ full_p <- area_profiles(df,
                         bar_width = 0.68,
                         indicator_label_nudgex = -0.1,
                         show_dividers = "outer",
-                        header_positions = c(-0.7, -0.44, -0.35, -0.25,
+                        header_positions = c(-1, -0.7, -0.44, -0.35, -0.25,
                                              -0.15, -0.05, 1.08),
                         dps = NA)
 ## An example with domains and non-default indicator ordering
@@ -174,6 +174,7 @@ p <- area_profiles(df,
                    local_area_code = "AC122",
                    indicator = IndicatorName,
                    timeperiod = Timeperiod,
+                   trend = Trend,
                    polarity = Polarity,
                    significance = Significance,
                    area_type = AreaType,
@@ -185,7 +186,7 @@ p <- area_profiles(df,
                    bar_width = 0.68,
                    indicator_label_nudgex = -0.1,
                    show_dividers = "outer",
-                   header_positions = c(-0.7, -0.53, -0.35, -0.25,
+                   header_positions = c(-1, -0.7, -0.53, -0.35, -0.25,
                                         -0.15, -0.05, 1.05),
                    domain = Domain
 )

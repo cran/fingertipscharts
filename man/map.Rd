@@ -4,9 +4,19 @@
 \alias{map}
 \title{Plot a choropleth map for an indicator}
 \usage{
-map(data, ons_api, area_code, fill, type = "static", value,
-  name_for_label, title = "", subtitle = "", copyright_size = 4,
-  copyright_year = Sys.Date())
+map(
+  data,
+  ons_api,
+  area_code,
+  fill,
+  type = "static",
+  value,
+  name_for_label,
+  title = "",
+  subtitle = "",
+  copyright_size = 4,
+  copyright_year = Sys.Date()
+)
 }
 \arguments{
 \item{data}{data.frame object to plot using ggplot2 functions}
@@ -42,6 +52,7 @@ a either a static or interactive ggplot choropleth map
 Plot a choropleth map for an indicator
 }
 \examples{
+\dontrun{
 ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
 
 p <- map(mapdata,
@@ -63,12 +74,15 @@ p <- map(mapdata,
          value = Value,
          name_for_label = AreaName,
          title = "An indicator for Upper Tier<br>Local Authorities England")
-p
+p}
 }
 \seealso{
-Other quick charts: \code{\link{box_plots}},
-  \code{\link{compare_areas}},
-  \code{\link{compare_indicators}}, \code{\link{overview}},
-  \code{\link{population}}, \code{\link{trends}}
+Other quick charts: 
+\code{\link{box_plots}()},
+\code{\link{compare_areas}()},
+\code{\link{compare_indicators}()},
+\code{\link{overview}()},
+\code{\link{population}()},
+\code{\link{trends}()}
 }
 \concept{quick charts}

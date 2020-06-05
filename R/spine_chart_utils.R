@@ -52,19 +52,24 @@ spine_data_check <- function(data, indicator, area_code) {
 #' Returns a data frame containing the data that sits next to the spine chart
 #' @inheritParams area_profiles
 #' @param dps number of decimal places to use in the data table
+#' @param header_width x dimension of chart to be used for normalising the arrow
+#'   length when horizonal
 #' @import dplyr
-#' @importFrom tidyr spread
-#' @importFrom rlang quo_text
+#' @importFrom tidyr pivot_wider
+#' @importFrom rlang quo_text .data eval_tidy
 #' @importFrom scales comma
 #' @return A data frame containing the information that sits alongside the spine
 #'   chart
 create_datatable <- function(data, indicator,
                              area_code, timeperiod,
+                             trend,
                              count, value,
                              local_area_code,
                              median_line_area_code,
                              comparator_area_code,
-                             dps = 1) {
+                             dps = 1,
+                             header_width,
+                             horizontal_arrow_multiplier) {
         if (is.na(comparator_area_code)) {
                 area_codes <- c(local_area_code, median_line_area_code)
         } else {
@@ -94,7 +99,8 @@ create_datatable <- function(data, indicator,
                                               "\'")
                                        )))) %>%
                 select(!!indicator, !!area_code, !!timeperiod, !!value) %>%
-                tidyr::spread(!!area_code, !!value)
+                tidyr::pivot_wider(names_from = !!area_code,
+                                   values_from = !!value)
         data_count <- data %>%
                 filter((!!area_code) == local_area_code) %>%
                 select(!!indicator, !!count) %>%
@@ -105,10 +111,47 @@ create_datatable <- function(data, indicator,
                                                               scales::comma(round2(as.numeric(!!count), 0),
                                                                             accuracy = 1),
                                                               "'"))))
+        if (is.character(rlang::eval_tidy(trend, data)) |
+            is.factor(rlang::eval_tidy(trend, data))) {
+
+                data_trend <- data %>%
+                        filter(({{ area_code }}) == local_area_code) %>%
+                        select({{ indicator }}, {{ trend }}) %>%
+                        mutate(direction = case_when(
+                                grepl("decreasing", tolower({{ trend }})) ~ pi,
+                                grepl("increasing", tolower({{ trend }})) ~ 0,
+                                grepl("no significant change", tolower({{ trend }})) ~ pi / 2,
+                                TRUE ~ NA_real_),
+                               trend_sig = case_when(
+                                       grepl("better", tolower({{ trend }})) ~ "Better",
+                                       grepl("worse", tolower({{ trend }})) ~ "Worse",
+                                       grepl("no significant change", tolower({{ trend }})) ~ "Similar",
+                                       grepl("increasing", tolower({{ trend }})) ~ "Higher",
+                                       grepl("decreasing", tolower({{ trend }})) ~ "Lower",
+                                       TRUE ~ "Not compared"),
+                               radius = case_when(
+                                       grepl("no significant change", tolower({{ trend }})) ~ 0.1 * header_width * horizontal_arrow_multiplier / (n() * 1.5),
+                                       grepl("increasing|decreasing", tolower({{ trend }})) ~ 0.1,
+                                       TRUE ~ NA_real_
+                                       )) %>%
+                        select(-{{ trend }})
+        } else {
+                data_trend <- data %>%
+                        select({{ indicator }}) %>%
+                        unique() %>%
+                        mutate(direction = NA,
+                               trend_sig = "",
+                               radius = NA)
+
+        }
         data_temp <- merge(data_temp, data_count,
                            by = rlang::quo_text(indicator),
                            all.x = TRUE) %>%
-                select(!!indicator, !!timeperiod, !!count, everything())
+                merge(data_trend,
+                      by = rlang::quo_text(indicator),
+                      all.x = TRUE) %>%
+                select({{ indicator }}, .data$direction, .data$trend_sig, {{ timeperiod }}, {{ count }}, everything())
+
 
         return(data_temp)
 }
@@ -197,14 +240,12 @@ spine_rescaler <- function(data,
         quantiles <- data %>%
                 split(pull(data, !!indicator)) %>%
                 purrr::map(rlang::quo_text(value)) %>%
-                map_df(quantile, na.rm = TRUE) %>%
-                t %>%
-                data.frame
+                map_df(quantile, na.rm = TRUE, .id = rlang::quo_text(indicator)) %>%
+                data.frame()
 
-        names(quantiles) <- c(paste0("Q", 100 * seq(0, 1, by = 0.25)))
-        quantiles[,3] <- NULL
+        names(quantiles)[-1] <- c(paste0("Q", 100 * seq(0, 1, by = 0.25)))
+        quantiles[, "Q50"] <- NULL
         quantiles <- quantiles %>%
-                rownames_to_column(var = rlang::quo_text(indicator)) %>%
                 merge(mean,
                       by = rlang::quo_text(indicator),
                       all.x = TRUE) %>%

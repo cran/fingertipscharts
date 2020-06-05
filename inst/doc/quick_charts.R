@@ -1,9 +1,9 @@
-## ----libraries, message=FALSE--------------------------------------------
+## ----libraries, message=FALSE-------------------------------------------------
 library(fingertipscharts)
 library(dplyr)
 library(tidyr)
 
-## ----overview data, message=FALSE----------------------------------------
+## ----overview data, message=FALSE---------------------------------------------
 region <- "PAC19"
 top_names <- c("C001", region)
 dfdom <- create_test_data() %>%
@@ -22,13 +22,13 @@ p <- overview(data = dfdom,
               value_label_size = 0.7)
 p
 
-## ----compare indicators data---------------------------------------------
+## ----compare indicators data--------------------------------------------------
 df <- create_test_data() %>%
   filter(IndicatorName %in% c("Indicator 1", "Indicator 2")) %>%
   select(IndicatorName, AreaCode, Value) %>%
   mutate(IndicatorName = gsub(" ", "", IndicatorName)) %>%
-  pivot_wider(names_from = IndicatorName, 
-                    values_from = Value)
+  pivot_wider(names_from = IndicatorName,
+              values_from = Value)
 
 ## ----compare indicators, out.width='80%', fig.width=9, fig.height=5, fig.align='center',warning=FALSE----
 p <- compare_indicators(data = df,
@@ -41,11 +41,11 @@ p <- compare_indicators(data = df,
                         add_R2 = TRUE)
 p
 
-## ----map get data--------------------------------------------------------
+## ----map get data-------------------------------------------------------------
 ons_api <- "https://opendata.arcgis.com/datasets/687f346f5023410ba86615655ff33ca9_4.geojson"
 
 
-## ----static reorder------------------------------------------------------
+## ----static reorder-----------------------------------------------------------
 ordered_levels <- c("Better",
                     "Similar", 
                     "Worse",
@@ -76,7 +76,7 @@ p <- map(df,
          title = "Map title<br>with a line break")
 p
 
-## ----trends get data-----------------------------------------------------
+## ----trends get data----------------------------------------------------------
 df <- create_test_data() %>%
         arrange(IndicatorName) %>%
         mutate(Timeperiod = rep(c("2011", "2012", "2013", "2014", "2015", "2016"),
@@ -110,7 +110,7 @@ p <- trends(df,
             ylab = "Unit of measurement")
 p
 
-## ----get fingertips data-------------------------------------------------
+## ----get fingertips data------------------------------------------------------
 region <- "PAC10"
 top_names <- c("C001", region)
 df <- create_test_data() %>%
@@ -118,7 +118,7 @@ df <- create_test_data() %>%
          (ParentAreaCode == region |
             AreaCode %in% top_names))
 
-## ----compare areas reorder-----------------------------------------------
+## ----compare areas reorder----------------------------------------------------
 ordered_levels <- c("Better",
                     "Similar", 
                     "Worse",
@@ -140,7 +140,7 @@ p <- compare_areas(df,
                       title = unique(df$IndicatorName))
 p
 
-## ----area profiles data, cache=TRUE--------------------------------------
+## ----area profiles data, cache=TRUE-------------------------------------------
 dfspine <- create_test_data()
 
 ## ----area profiles, warning=FALSE, out.width='100%', fig.width=10, fig.height=2.5----
@@ -151,6 +151,7 @@ p <- area_profiles(dfspine,
                    local_area_code = "AC110",
                    indicator = IndicatorName,
                    timeperiod = Timeperiod,
+                   trend = Trend,
                    polarity = Polarity,
                    significance = Significance,
                    area_type = AreaType,
@@ -158,14 +159,17 @@ p <- area_profiles(dfspine,
                    median_line_area_code = "C001",
                    comparator_area_code = "PAC11",
                    datatable = TRUE,
-                   header_positions = c(-1, -0.63, -0.48, -0.36, -0.21, -0.05, 1.08),
+                   header_positions = c(-1.2, -0.9, -0.63, 
+                                        -0.48, -0.36, -0.21,
+                                        -0.05, 1.08),
                    relative_domain_text_size = 0.75,
                    relative_text_size = 1.2,
-                   bar_width = 0.68)
+                   bar_width = 0.68,
+                   horizontal_arrow_multiplier = 0.7)
 p
 
 
-## ----population data-----------------------------------------------------
+## ----population data----------------------------------------------------------
 set.seed(1234)
 agelevels <- c("0-4", "5-9","10-14","15-19",
                "20-24","25-29","30-34",
@@ -212,7 +216,7 @@ p <- population(pops,
                 xlab = "% of total population")
 p
 
-## ----boxplots data-------------------------------------------------------
+## ----boxplots data------------------------------------------------------------
 df <- create_test_data() %>%
         arrange(IndicatorName) %>%
         mutate(Timeperiod = rep(c("2011", "2012", "2013", "2014", "2015", "2016"),
